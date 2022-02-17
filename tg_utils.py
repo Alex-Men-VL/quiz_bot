@@ -50,10 +50,7 @@ def get_quiz_questions():
     for number, question in enumerate(decode_quiz_questions, start=1):
         numbered_questions.update(
             {
-                number: {
-                    'question': question,
-                    'answer': decode_quiz_questions[question]
-                }
+                str(number): f'{question}__{decode_quiz_questions[question]}'
             }
         )
     return numbered_questions

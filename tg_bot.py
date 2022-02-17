@@ -1,4 +1,5 @@
 import logging
+import pprint
 from enum import Enum
 
 from telegram import ReplyKeyboardMarkup, Bot
@@ -49,9 +50,8 @@ def handle_new_question_request(update, context):
     chat_id = update.message.chat_id
 
     question_number = redis_data.hget(chat_id, 'question_number')
-    quiz = context.bot_data.get('questions').get(int(question_number))
-    quiz_question = quiz.get('question')
-    quiz_answer = quiz.get('answer')
+    quiz = redis_data.hget('questions', question_number)
+    quiz_question, quiz_answer = quiz.split('__')
     update_user_data(chat_id, current_answer=quiz_answer)
 
     update.message.reply_text(quiz_question)
@@ -137,11 +137,9 @@ def main():
     updater.dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command & ~Filters.regex('^(Новый вопрос)$'),
                                                   handle_unregistered_message))
 
-    updater.dispatcher.bot_data.update(
-        {
-            'questions': get_quiz_questions()
-        }
-    )
+    if not redis_data.exists('questions'):
+        quiz_questions = get_quiz_questions()
+        redis_data.hset('questions', mapping=quiz_questions)
 
     try:
         updater.start_polling()
