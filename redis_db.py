@@ -48,7 +48,7 @@ def update_user_data(user, increase_question_number=False, current_answer=None,
             'current_score': '0'
         }
         if state:
-            mapping.update({'state': state})
+            mapping.update({'state': state})  # If the user uses a VK bot
 
         redis_data.hset(user, mapping=mapping)
         return

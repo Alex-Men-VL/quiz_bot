@@ -11,7 +11,12 @@ from bot_utils import (
     build_vk_menu,
     check_answer
 )
-from redis_db import redis_data, update_user_data, save_quiz_questions_in_bd, get_current_quiz
+from redis_db import (
+    redis_data,
+    update_user_data,
+    save_quiz_questions_in_bd,
+    get_current_quiz
+)
 from tg_logs_handler import TelegramLogsHandler
 
 logger = logging.getLogger(__file__)
