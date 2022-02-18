@@ -1,7 +1,7 @@
 import json
 
 from environs import Env
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+from vk_api.keyboard import VkKeyboard
 
 from redis_db import redis_data
 
@@ -25,14 +25,13 @@ def build_tg_menu(buttons, n_cols,
     return menu
 
 
-def build_vk_menu():
+def build_vk_menu(buttons, n_cols):
     keyboard = VkKeyboard()
 
-    keyboard.add_button('Новый вопрос', color=VkKeyboardColor.PRIMARY)
-    keyboard.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
-
-    keyboard.add_line()
-    keyboard.add_button('Мой счет', color=VkKeyboardColor.SECONDARY)
+    for number, button in enumerate(buttons, start=1):
+        keyboard.add_button(button, color=buttons[button])
+        if number % n_cols == 0:
+            keyboard.add_line()
     return keyboard.get_keyboard()
 
 

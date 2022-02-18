@@ -42,7 +42,7 @@ def send_start_message(event, bot):
     bot.messages.send(
         user_id=user_id,
         message=static_text.vk_start_message,
-        keyboard=build_vk_menu(),
+        keyboard=build_vk_menu(static_text.vk_menu_buttons, n_cols=2),
         random_id=random.randint(1, 1000)
     )
     return 'QUESTION'

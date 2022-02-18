@@ -35,7 +35,7 @@ def handle_start_message(update, _):
     update_user_data(chat_id)
 
     user = update.effective_user
-    buttons = build_tg_menu(static_text.menu_buttons, n_cols=2)
+    buttons = build_tg_menu(static_text.tg_menu_buttons, n_cols=2)
     reply_markup = ReplyKeyboardMarkup(buttons, resize_keyboard=True)
     update.message.reply_text(static_text.tg_start_message.format(first_name=user.first_name), reply_markup=reply_markup)
 
