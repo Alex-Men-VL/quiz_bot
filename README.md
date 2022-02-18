@@ -12,13 +12,14 @@
 - [Telegram](https://web.telegram.org/)
 - [VK](https://vk.com/)
 
+[Пример рабочего бота в Telegram](https://t.me/ALMenTestBot).
 
 ## Как запустить
 
 - Скачайте код:
 ```shell
-$ git clone https://github.com/Alex-Men-VL/notification_bot.git
-$ cd notification_bot
+$ git clone https://github.com/Alex-Men-VL/quiz_bot.git
+$ cd quiz_bot
 ```
 - Установите зависимости:
 ```shell
@@ -26,11 +27,11 @@ $ pip install -r requirements.txt
 ```
 - Запустите бота в Telegram:
 ```shell
-$ python3 start_tg_bot.py
+$ python3 tg_bot.py
 ```
 - Запустите бота в VK:
 ```shell
-$ python3 start_vk_bot.py
+$ python3 vk_bot.py
 ```
 
 ## Как добавить вопросы в Redis
