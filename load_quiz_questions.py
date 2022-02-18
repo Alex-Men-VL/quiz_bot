@@ -9,7 +9,7 @@ logger = logging.getLogger(__file__)
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Upload questions to the dictionary')
     parser.add_argument('--path', '-p',
-                        help='Enter the path to the file with the questions',
+                        help='Enter the path to the folder with the questions',
                         type=str,
                         default='quiz-questions')
     return parser.parse_args()
