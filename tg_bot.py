@@ -13,10 +13,9 @@ from telegram.ext import (
 import static_text
 from bot_utils import (
     check_answer,
-    build_tg_menu,
-    get_quiz_questions, get_current_quiz
+    build_tg_menu
 )
-from redis_db import redis_data, update_user_data
+from redis_db import redis_data, update_user_data, save_quiz_questions_in_bd, get_current_quiz
 from tg_logs_handler import TelegramLogsHandler
 
 env = Env()
@@ -137,8 +136,8 @@ def main():
                                                   handle_unregistered_message))
 
     if not redis_data.exists('questions'):
-        quiz_questions = get_quiz_questions()
-        redis_data.hset('questions', mapping=quiz_questions)
+        save_quiz_questions_in_bd()
+        logger.info('Questions added to the database')
 
     try:
         updater.start_polling()

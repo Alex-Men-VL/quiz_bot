@@ -1,5 +1,3 @@
-import json
-
 from environs import Env
 from vk_api.keyboard import VkKeyboard
 
@@ -33,24 +31,3 @@ def build_vk_menu(buttons, n_cols):
         if number % n_cols == 0:
             keyboard.add_line()
     return keyboard.get_keyboard()
-
-
-def get_quiz_questions():
-    with open('quiz_questions.json', 'r') as json_file:
-        quiz_questions = json_file.read()
-    decode_quiz_questions = json.loads(quiz_questions)
-    numbered_questions = {}
-    for number, question in enumerate(decode_quiz_questions, start=1):
-        numbered_questions.update(
-            {
-                str(number): f'{question}__{decode_quiz_questions[question]}'
-            }
-        )
-    return numbered_questions
-
-
-def get_current_quiz(user_id):
-    question_number = redis_data.hget(user_id, 'question_number')
-    quiz = redis_data.hget('questions', question_number)
-    quiz_question, quiz_answer = quiz.split('__')
-    return quiz_question, quiz_answer

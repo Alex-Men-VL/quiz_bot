@@ -1,5 +1,6 @@
-import redis
+import json
 
+import redis
 from environs import Env
 
 env = Env()
@@ -25,6 +26,19 @@ def redis_connection():
 redis_data = redis_connection()
 
 
+def save_quiz_questions_in_bd():
+    with open('quiz_questions.json', 'r') as json_file:
+        quiz_questions = json_file.read()
+    decode_quiz_questions = json.loads(quiz_questions)
+    for number, question in enumerate(decode_quiz_questions, start=1):
+        mapping = {
+            'question': question,
+            'answer': decode_quiz_questions[question]
+        }
+        redis_data.hset(f'question_{number}', mapping=mapping)
+    redis_data.set('questions', 'True')
+
+
 def update_user_data(user_id, increase_question_number=False, current_answer=None,
                      increase_current_score=False, state=None):
     if not redis_data.exists(user_id):
@@ -47,3 +61,10 @@ def update_user_data(user_id, increase_question_number=False, current_answer=Non
         redis_data.hset(user_id, 'current_answer', current_answer)
     if state:
         redis_data.hset(user_id, 'state', state)
+
+
+def get_current_quiz(user_id):
+    question_number = redis_data.hget(user_id, 'question_number')
+    quiz_question = redis_data.hget(f'question_{question_number}', 'question')
+    quiz_answer = redis_data.hget(f'question_{question_number}', 'answer')
+    return quiz_question, quiz_answer
