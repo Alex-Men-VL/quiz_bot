@@ -19,25 +19,28 @@ logger = logging.getLogger(__file__)
 env = Env()
 env.read_env()
 
+NETWORK = 'vk'
+
 
 def handle_message(event, bot, states_functions):
     user_id = event.user_id
-    if not redis_data.exists(user_id, 'state'):
+    user = f'{NETWORK}_{user_id}'
+    if not redis_data.exists(user, 'state'):
         state = 'START'
-        update_user_data(user_id, state=state)
+        update_user_data(user, state=state)
     else:
-        state = redis_data.hget(user_id, 'state')
+        state = redis_data.hget(user, 'state')
 
     if event.text == 'Мой счет':
-        send_score(event, bot)
+        send_score(event, bot, user)
         return
 
     state_handler = states_functions[state]
-    next_state = state_handler(event, bot)
-    update_user_data(user_id, state=next_state)
+    next_state = state_handler(event, bot, user)
+    update_user_data(user, state=next_state)
 
 
-def send_start_message(event, bot):
+def send_start_message(event, bot, _):
     user_id = event.user_id
     bot.messages.send(
         user_id=user_id,
@@ -48,14 +51,14 @@ def send_start_message(event, bot):
     return 'QUESTION'
 
 
-def handle_new_question_request(event, bot):
+def handle_new_question_request(event, bot, user):
     if event.text != 'Новый вопрос':
         handle_unregistered_message(event, bot)
         return 'QUESTION'
 
     user_id = event.user_id
-    quiz_question, quiz_answer = get_current_quiz(user_id)
-    update_user_data(user_id, current_answer=quiz_answer)
+    quiz_question, quiz_answer = get_current_quiz(user)
+    update_user_data(user, current_answer=quiz_answer)
     bot.messages.send(
         user_id=user_id,
         message=quiz_question,
@@ -64,23 +67,23 @@ def handle_new_question_request(event, bot):
     return 'ANSWER'
 
 
-def handle_solution_attempt(event, bot):
+def handle_solution_attempt(event, bot, user):
     user_id = event.user_id
     answer = event.text
     if answer == 'Сдаться':
-        send_quiz_answer(event, bot)
+        send_quiz_answer(event, bot, user)
         return 'QUESTION'
     elif answer == 'Новый вопрос':
         handle_unregistered_message(event, bot)
         return 'ANSWER'
 
-    if check_answer(user_id, answer):
+    if check_answer(user, answer):
         bot.messages.send(
             user_id=user_id,
             message=static_text.correct_answer_message,
             random_id=random.randint(1, 1000)
         )
-        update_user_data(user_id, increase_question_number=True, increase_current_score=True)
+        update_user_data(user, increase_question_number=True, increase_current_score=True)
         return 'QUESTION'
     else:
         bot.messages.send(
@@ -91,9 +94,9 @@ def handle_solution_attempt(event, bot):
         return 'ANSWER'
 
 
-def send_quiz_answer(event, bot):
+def send_quiz_answer(event, bot, user):
     user_id = event.user_id
-    quiz_answer = redis_data.hget(user_id, 'current_answer')
+    quiz_answer = redis_data.hget(user, 'current_answer')
 
     message = static_text.quiz_answer_message.format(quiz_answer=quiz_answer)
     bot.messages.send(
@@ -101,13 +104,13 @@ def send_quiz_answer(event, bot):
         message=message,
         random_id=random.randint(1, 1000)
     )
-    update_user_data(user_id, increase_question_number=True)
+    update_user_data(user, increase_question_number=True)
 
 
-def send_score(event, bot):
+def send_score(event, bot, user):
     user_id = event.user_id
-    score = redis_data.hget(user_id, 'current_score')
-    answers_number = int(redis_data.hget(user_id, 'question_number')) - 1
+    score = redis_data.hget(user, 'current_score')
+    answers_number = int(redis_data.hget(user, 'question_number')) - 1
     message = static_text.total_score_message.format(score=score, answers_number=answers_number)
     bot.messages.send(
         user_id=user_id,
@@ -145,6 +148,7 @@ def main():
 
     if not redis_data.exists('questions'):
         save_quiz_questions_in_bd()
+        logger.info('Questions added to the database')
 
     try:
         vk_session = VkApi(token=vk_token)

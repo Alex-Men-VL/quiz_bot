@@ -23,20 +23,29 @@ env.read_env()
 
 logger = logging.getLogger(__file__)
 
+NETWORK = 'tg'
+
 
 class Conversation(Enum):
     QUESTION = 1
     ANSWER = 2
 
 
-def handle_start_message(update, _):
+def handle_start_message(update, context):
     chat_id = update.message.chat_id
-    update_user_data(chat_id)
+    user = f'{NETWORK}_{chat_id}'
+    context.user_data.update(
+        {
+            'user': user
+        }
+    )
+    update_user_data(user)
 
-    user = update.effective_user
+    user_first_name = update.effective_user.first_name
     buttons = build_tg_menu(static_text.tg_menu_buttons, n_cols=2)
     reply_markup = ReplyKeyboardMarkup(buttons, resize_keyboard=True)
-    update.message.reply_text(static_text.tg_start_message.format(first_name=user.first_name), reply_markup=reply_markup)
+    update.message.reply_text(static_text.tg_start_message.format(first_name=user_first_name),
+                              reply_markup=reply_markup)
 
     return Conversation.QUESTION
 
@@ -46,41 +55,41 @@ def handle_cancel_message(update, _):
     return ConversationHandler.END
 
 
-def handle_new_question_request(update, _):
-    chat_id = update.message.chat_id
+def handle_new_question_request(update, context):
+    user = context.user_data.get('user')
 
-    quiz_question, quiz_answer = get_current_quiz(chat_id)
-    update_user_data(chat_id, current_answer=quiz_answer)
+    quiz_question, quiz_answer = get_current_quiz(user)
+    update_user_data(user, current_answer=quiz_answer)
 
     update.message.reply_text(quiz_question)
     return Conversation.ANSWER
 
 
-def handle_solution_attempt(update, _):
+def handle_solution_attempt(update, context):
     answer = update.message.text
-    chat_id = update.message.chat_id
-    if check_answer(chat_id, answer):
+    user = context.user_data.get('user')
+    if check_answer(user, answer):
         update.message.reply_text(static_text.correct_answer_message)
-        update_user_data(chat_id, increase_question_number=True, increase_current_score=True)
+        update_user_data(user, increase_question_number=True, increase_current_score=True)
         return Conversation.QUESTION
     else:
         update.message.reply_text(static_text.wrong_answer_message)
 
 
-def send_quiz_answer(update, _):
-    chat_id = update.message.chat_id
-    quiz_answer = redis_data.hget(chat_id, 'current_answer')
+def send_quiz_answer(update, context):
+    user = context.user_data.get('user')
+    quiz_answer = redis_data.hget(user, 'current_answer')
 
     message = static_text.quiz_answer_message.format(quiz_answer=quiz_answer)
     update.message.reply_text(message)
-    update_user_data(chat_id, increase_question_number=True)
+    update_user_data(user, increase_question_number=True)
     return Conversation.QUESTION
 
 
-def send_score(update, _):
-    chat_id = update.message.chat_id
-    score = redis_data.hget(chat_id, 'current_score')
-    answers_number = int(redis_data.hget(chat_id, 'question_number')) - 1
+def send_score(update, context):
+    user = context.user_data.get('user')
+    score = redis_data.hget(user, 'current_score')
+    answers_number = int(redis_data.hget(user, 'question_number')) - 1
     message = static_text.total_score_message.format(score=score, answers_number=answers_number)
     update.message.reply_text(message)
 

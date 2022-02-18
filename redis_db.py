@@ -39,9 +39,9 @@ def save_quiz_questions_in_bd():
     redis_data.set('questions', 'True')
 
 
-def update_user_data(user_id, increase_question_number=False, current_answer=None,
+def update_user_data(user, increase_question_number=False, current_answer=None,
                      increase_current_score=False, state=None):
-    if not redis_data.exists(user_id):
+    if not redis_data.exists(user):
         mapping = {
             'question_number': '1',
             'current_answer': '',
@@ -50,21 +50,21 @@ def update_user_data(user_id, increase_question_number=False, current_answer=Non
         if state:
             mapping.update({'state': state})
 
-        redis_data.hset(user_id, mapping=mapping)
+        redis_data.hset(user, mapping=mapping)
         return
 
     if increase_question_number:
-        redis_data.hincrby(user_id, 'question_number', 1)
+        redis_data.hincrby(user, 'question_number', 1)
     if increase_current_score:
-        redis_data.hincrby(user_id, 'current_score', 1)
+        redis_data.hincrby(user, 'current_score', 1)
     if current_answer:
-        redis_data.hset(user_id, 'current_answer', current_answer)
+        redis_data.hset(user, 'current_answer', current_answer)
     if state:
-        redis_data.hset(user_id, 'state', state)
+        redis_data.hset(user, 'state', state)
 
 
-def get_current_quiz(user_id):
-    question_number = redis_data.hget(user_id, 'question_number')
+def get_current_quiz(user):
+    question_number = redis_data.hget(user, 'question_number')
     quiz_question = redis_data.hget(f'question_{question_number}', 'question')
     quiz_answer = redis_data.hget(f'question_{question_number}', 'answer')
     return quiz_question, quiz_answer
