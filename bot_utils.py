@@ -1,6 +1,7 @@
 import json
 
 from environs import Env
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
 from redis_db import redis_data
 
@@ -13,15 +14,26 @@ def check_answer(chat_id, answer):
     return answer.lower() in current_answer.lower()
 
 
-def build_menu(buttons, n_cols,
-               header_buttons=None,
-               footer_buttons=None):
+def build_tg_menu(buttons, n_cols,
+                  header_buttons=None,
+                  footer_buttons=None):
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     if header_buttons:
         menu.insert(0, [header_buttons])
     if footer_buttons:
         menu.append([footer_buttons])
     return menu
+
+
+def build_vk_menu():
+    keyboard = VkKeyboard()
+
+    keyboard.add_button('Новый вопрос', color=VkKeyboardColor.PRIMARY)
+    keyboard.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
+
+    keyboard.add_line()
+    keyboard.add_button('Мой счет', color=VkKeyboardColor.SECONDARY)
+    return keyboard.get_keyboard()
 
 
 def get_quiz_questions():
@@ -38,17 +50,8 @@ def get_quiz_questions():
     return numbered_questions
 
 
-def update_user_data(chat_id, increase_question_number=False, current_answer=None, increase_current_score=False):
-    if not redis_data.exists(chat_id):
-        redis_data.hset(chat_id,
-                        mapping={
-                            'question_number': '1',
-                            'current_answer': '',
-                            'current_score': '0'
-                        })
-    if increase_question_number:
-        redis_data.hincrby(chat_id, 'question_number', 1)
-    if increase_current_score:
-        redis_data.hincrby(chat_id, 'current_score', 1)
-    if current_answer:
-        redis_data.hset(chat_id, 'current_answer', current_answer)
+def get_current_quiz(user_id):
+    question_number = redis_data.hget(user_id, 'question_number')
+    quiz = redis_data.hget('questions', question_number)
+    quiz_question, quiz_answer = quiz.split('__')
+    return quiz_question, quiz_answer

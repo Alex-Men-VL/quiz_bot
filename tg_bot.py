@@ -11,14 +11,13 @@ from telegram.ext import (
 )
 
 import static_text
-from tg_logs_handler import TelegramLogsHandler
-from tg_utils import (
+from bot_utils import (
     check_answer,
-    build_menu,
-    get_quiz_questions,
-    update_user_data
+    build_tg_menu,
+    get_quiz_questions, get_current_quiz
 )
-from redis_db import redis_data
+from redis_db import redis_data, update_user_data
+from tg_logs_handler import TelegramLogsHandler
 
 env = Env()
 env.read_env()
@@ -36,9 +35,9 @@ def handle_start_message(update, _):
     update_user_data(chat_id)
 
     user = update.effective_user
-    buttons = build_menu(static_text.menu_buttons, n_cols=2)
+    buttons = build_tg_menu(static_text.menu_buttons, n_cols=2)
     reply_markup = ReplyKeyboardMarkup(buttons, resize_keyboard=True)
-    update.message.reply_text(static_text.start_message.format(first_name=user.first_name), reply_markup=reply_markup)
+    update.message.reply_text(static_text.tg_start_message.format(first_name=user.first_name), reply_markup=reply_markup)
 
     return Conversation.QUESTION
 
@@ -51,9 +50,7 @@ def handle_cancel_message(update, _):
 def handle_new_question_request(update, _):
     chat_id = update.message.chat_id
 
-    question_number = redis_data.hget(chat_id, 'question_number')
-    quiz = redis_data.hget('questions', question_number)
-    quiz_question, quiz_answer = quiz.split('__')
+    quiz_question, quiz_answer = get_current_quiz(chat_id)
     update_user_data(chat_id, current_answer=quiz_answer)
 
     update.message.reply_text(quiz_question)
