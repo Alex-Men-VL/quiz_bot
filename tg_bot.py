@@ -1,7 +1,7 @@
 import logging
-import pprint
 from enum import Enum
 
+from environs import Env
 from telegram import ReplyKeyboardMarkup, Bot
 from telegram.ext import (
     Updater,
@@ -13,13 +13,15 @@ from telegram.ext import (
 import static_text
 from tg_logs_handler import TelegramLogsHandler
 from tg_utils import (
-    redis_data,
-    env,
     check_answer,
     build_menu,
     get_quiz_questions,
     update_user_data
 )
+from redis_db import redis_data
+
+env = Env()
+env.read_env()
 
 logger = logging.getLogger(__file__)
 
@@ -46,7 +48,7 @@ def handle_cancel_message(update, _):
     return ConversationHandler.END
 
 
-def handle_new_question_request(update, context):
+def handle_new_question_request(update, _):
     chat_id = update.message.chat_id
 
     question_number = redis_data.hget(chat_id, 'question_number')
