@@ -23,9 +23,6 @@ from redis_db import (
 )
 from tg_logs_handler import TelegramLogsHandler
 
-env = Env()
-env.read_env()
-
 logger = logging.getLogger(__file__)
 
 NETWORK = 'tg'
@@ -104,6 +101,9 @@ def handle_unregistered_message(update, _):
 
 
 def main():
+    env = Env()
+    env.read_env()
+
     logging.basicConfig(level=logging.INFO)
 
     tg_token = env.str('TELEGRAM_BOT_TOKEN')

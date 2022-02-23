@@ -21,9 +21,6 @@ from tg_logs_handler import TelegramLogsHandler
 
 logger = logging.getLogger(__file__)
 
-env = Env()
-env.read_env()
-
 NETWORK = 'vk'
 
 
@@ -134,6 +131,9 @@ def handle_unregistered_message(event, bot):
 
 
 def main():
+    env = Env()
+    env.read_env()
+
     logging.basicConfig(level=logging.INFO)
 
     tg_dev_token = env.str('TELEGRAM_DEV_BOT_TOKEN')
