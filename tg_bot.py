@@ -15,10 +15,9 @@ from bot_utils import (
     check_answer
 )
 from redis_db import (
-    redis_data,
     update_user_data,
     save_quiz_questions_in_bd,
-    get_current_quiz
+    get_current_quiz, redis_connection
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -40,7 +39,8 @@ def handle_start_message(update, context):
             'user': user
         }
     )
-    update_user_data(user)
+    redis_data = context.bot_data.get('redis_data')
+    update_user_data(user, redis_data)
 
     user_first_name = update.effective_user.first_name
     buttons = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
@@ -60,9 +60,10 @@ def handle_cancel_message(update, _):
 
 def handle_new_question_request(update, context):
     user = context.user_data.get('user')
+    redis_data = context.bot_data.get('redis_data')
 
-    quiz_question, quiz_answer = get_current_quiz(user)
-    update_user_data(user, current_answer=quiz_answer)
+    quiz_question, quiz_answer = get_current_quiz(user, redis_data)
+    update_user_data(user, redis_data, current_answer=quiz_answer)
 
     update.message.reply_text(quiz_question)
     return Conversation.ANSWER
@@ -71,9 +72,12 @@ def handle_new_question_request(update, context):
 def handle_solution_attempt(update, context):
     answer = update.message.text
     user = context.user_data.get('user')
-    if check_answer(user, answer):
+    redis_data = context.bot_data.get('redis_data')
+
+    if check_answer(user, answer, redis_data):
         update.message.reply_text(bot_message_texts.correct_answer_message)
-        update_user_data(user, increase_question_number=True, increase_current_score=True)
+        update_user_data(user, redis_data, increase_question_number=True,
+                         increase_current_score=True)
         return Conversation.QUESTION
     else:
         update.message.reply_text(bot_message_texts.wrong_answer_message)
@@ -81,16 +85,20 @@ def handle_solution_attempt(update, context):
 
 def send_quiz_answer(update, context):
     user = context.user_data.get('user')
+    redis_data = context.bot_data.get('redis_data')
+
     quiz_answer = redis_data.hget(user, 'current_answer')
 
     message = bot_message_texts.quiz_answer_message.format(quiz_answer=quiz_answer)
     update.message.reply_text(message)
-    update_user_data(user, increase_question_number=True)
+    update_user_data(user, redis_data, increase_question_number=True)
     return Conversation.QUESTION
 
 
 def send_score(update, context):
     user = context.user_data.get('user')
+    redis_data = context.bot_data.get('redis_data')
+
     score = redis_data.hget(user, 'current_score')
     answers_number = int(redis_data.hget(user, 'question_number')) - 1
     message = bot_message_texts.total_score_message.format(score=score, answers_number=answers_number)
@@ -116,7 +124,15 @@ def main():
     logger.addHandler(logs_handler)
     logger.info('Telegram bot is running')
 
+    redis_uri = env.str('REDIS_URL')
+    redis_port = env.str('REDIS_PORT')
+    redis_password = env.str('REDIS_PASSWORD')
+
+    redis_data = redis_connection(redis_uri, redis_port, redis_password)
+
     updater = Updater(token=tg_token, use_context=True)
+    updater.dispatcher.bot_data.update({'redis_data': redis_data})
+
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler('start', handle_start_message),
@@ -151,7 +167,7 @@ def main():
                                                   handle_unregistered_message))
 
     if not redis_data.exists('questions'):
-        save_quiz_questions_in_bd()
+        save_quiz_questions_in_bd(redis_data)
         logger.info('Questions added to the database')
 
     try:

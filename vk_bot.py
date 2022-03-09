@@ -12,10 +12,9 @@ from bot_utils import (
     check_answer
 )
 from redis_db import (
-    redis_data,
     update_user_data,
     save_quiz_questions_in_bd,
-    get_current_quiz
+    get_current_quiz, redis_connection
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -24,22 +23,22 @@ logger = logging.getLogger(__file__)
 NETWORK = 'vk'
 
 
-def handle_message(event, bot, states_functions):
+def handle_message(event, bot, states_functions, redis_data):
     user_id = event.user_id
     user = f'{NETWORK}_{user_id}'
     if not redis_data.exists(user, 'state'):
         state = 'START'
-        update_user_data(user, state=state)
+        update_user_data(user, redis_data, state=state)
     else:
         state = redis_data.hget(user, 'state')
 
     if event.text == 'Мой счет':
-        send_score(event, bot, user)
+        send_score(event, bot, user, redis_data)
         return
 
     state_handler = states_functions[state]
-    next_state = state_handler(event, bot, user)
-    update_user_data(user, state=next_state)
+    next_state = state_handler(event, bot, user, redis_data)
+    update_user_data(user, redis_data, state=next_state)
 
 
 def build_start_menu(n_cols=2):
@@ -58,7 +57,7 @@ def build_start_menu(n_cols=2):
     return keyboard.get_keyboard()
 
 
-def send_start_message(event, bot, _):
+def send_start_message(event, bot, user, redis_data):
     user_id = event.user_id
     bot.messages.send(
         user_id=user_id,
@@ -69,14 +68,14 @@ def send_start_message(event, bot, _):
     return 'QUESTION'
 
 
-def handle_new_question_request(event, bot, user):
+def handle_new_question_request(event, bot, user, redis_data):
     if event.text != 'Новый вопрос':
         handle_unregistered_message(event, bot)
         return 'QUESTION'
 
     user_id = event.user_id
-    quiz_question, quiz_answer = get_current_quiz(user)
-    update_user_data(user, current_answer=quiz_answer)
+    quiz_question, quiz_answer = get_current_quiz(user, redis_data)
+    update_user_data(user, redis_data, current_answer=quiz_answer)
     bot.messages.send(
         user_id=user_id,
         message=quiz_question,
@@ -85,23 +84,24 @@ def handle_new_question_request(event, bot, user):
     return 'ANSWER'
 
 
-def handle_solution_attempt(event, bot, user):
+def handle_solution_attempt(event, bot, user, redis_data):
     user_id = event.user_id
     answer = event.text
     if answer == 'Сдаться':
-        send_quiz_answer(event, bot, user)
+        send_quiz_answer(event, bot, user, redis_data)
         return 'QUESTION'
     elif answer == 'Новый вопрос':
         handle_unregistered_message(event, bot)
         return 'ANSWER'
 
-    if check_answer(user, answer):
+    if check_answer(user, answer, redis_data):
         bot.messages.send(
             user_id=user_id,
             message=bot_message_texts.correct_answer_message,
             random_id=random.randint(1, 1000)
         )
-        update_user_data(user, increase_question_number=True, increase_current_score=True)
+        update_user_data(user, redis_data, increase_question_number=True,
+                         increase_current_score=True)
         return 'QUESTION'
     else:
         bot.messages.send(
@@ -112,7 +112,7 @@ def handle_solution_attempt(event, bot, user):
         return 'ANSWER'
 
 
-def send_quiz_answer(event, bot, user):
+def send_quiz_answer(event, bot, user, redis_data):
     user_id = event.user_id
     quiz_answer = redis_data.hget(user, 'current_answer')
 
@@ -122,10 +122,10 @@ def send_quiz_answer(event, bot, user):
         message=message,
         random_id=random.randint(1, 1000)
     )
-    update_user_data(user, increase_question_number=True)
+    update_user_data(user, redis_data, increase_question_number=True)
 
 
-def send_score(event, bot, user):
+def send_score(event, bot, user, redis_data):
     user_id = event.user_id
     score = redis_data.hget(user, 'current_score')
     answers_number = int(redis_data.hget(user, 'question_number')) - 1
@@ -161,6 +161,12 @@ def main():
     logger.addHandler(logs_handler)
     logger.info('VK bot is running')
 
+    redis_uri = env.str('REDIS_URL')
+    redis_port = env.str('REDIS_PORT')
+    redis_password = env.str('REDIS_PASSWORD')
+
+    redis_data = redis_connection(redis_uri, redis_port, redis_password)
+
     states_functions = {
         'START': send_start_message,
         'QUESTION': handle_new_question_request,
@@ -168,7 +174,7 @@ def main():
     }
 
     if not redis_data.exists('questions'):
-        save_quiz_questions_in_bd()
+        save_quiz_questions_in_bd(redis_data)
         logger.info('Questions added to the database')
 
     try:
@@ -178,7 +184,7 @@ def main():
 
         for event in longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-                handle_message(event, bot, states_functions)
+                handle_message(event, bot, states_functions, redis_data)
     except Exception as err:
         logger.error(err)
 
