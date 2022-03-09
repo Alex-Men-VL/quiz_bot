@@ -7,7 +7,7 @@ from vk_api import VkApi
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
-import static_text
+import bot_message_texts
 from bot_utils import (
     check_answer
 )
@@ -62,7 +62,7 @@ def send_start_message(event, bot, _):
     user_id = event.user_id
     bot.messages.send(
         user_id=user_id,
-        message=static_text.vk_start_message,
+        message=bot_message_texts.vk_start_message,
         keyboard=build_start_menu(),
         random_id=random.randint(1, 1000)
     )
@@ -98,7 +98,7 @@ def handle_solution_attempt(event, bot, user):
     if check_answer(user, answer):
         bot.messages.send(
             user_id=user_id,
-            message=static_text.correct_answer_message,
+            message=bot_message_texts.correct_answer_message,
             random_id=random.randint(1, 1000)
         )
         update_user_data(user, increase_question_number=True, increase_current_score=True)
@@ -106,7 +106,7 @@ def handle_solution_attempt(event, bot, user):
     else:
         bot.messages.send(
             user_id=user_id,
-            message=static_text.wrong_answer_message,
+            message=bot_message_texts.wrong_answer_message,
             random_id=random.randint(1, 1000)
         )
         return 'ANSWER'
@@ -116,7 +116,7 @@ def send_quiz_answer(event, bot, user):
     user_id = event.user_id
     quiz_answer = redis_data.hget(user, 'current_answer')
 
-    message = static_text.quiz_answer_message.format(quiz_answer=quiz_answer)
+    message = bot_message_texts.quiz_answer_message.format(quiz_answer=quiz_answer)
     bot.messages.send(
         user_id=user_id,
         message=message,
@@ -129,7 +129,7 @@ def send_score(event, bot, user):
     user_id = event.user_id
     score = redis_data.hget(user, 'current_score')
     answers_number = int(redis_data.hget(user, 'question_number')) - 1
-    message = static_text.total_score_message.format(score=score, answers_number=answers_number)
+    message = bot_message_texts.total_score_message.format(score=score, answers_number=answers_number)
     bot.messages.send(
         user_id=user_id,
         message=message,
@@ -141,7 +141,7 @@ def handle_unregistered_message(event, bot):
     user_id = event.user_id
     bot.messages.send(
         user_id=user_id,
-        message=static_text.unregistered_message,
+        message=bot_message_texts.unregistered_message,
         random_id=random.randint(1, 1000)
     )
 

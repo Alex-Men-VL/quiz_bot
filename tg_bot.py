@@ -10,7 +10,7 @@ from telegram.ext import (
     Filters, ConversationHandler
 )
 
-import static_text
+import bot_message_texts
 from bot_utils import (
     check_answer
 )
@@ -46,7 +46,7 @@ def handle_start_message(update, context):
     buttons = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(buttons, resize_keyboard=True)
     update.message.reply_text(
-        static_text.tg_start_message.format(first_name=user_first_name),
+        bot_message_texts.tg_start_message.format(first_name=user_first_name),
         reply_markup=reply_markup
     )
 
@@ -54,7 +54,7 @@ def handle_start_message(update, context):
 
 
 def handle_cancel_message(update, _):
-    update.message.reply_text(static_text.cancel_message)
+    update.message.reply_text(bot_message_texts.cancel_message)
     return ConversationHandler.END
 
 
@@ -72,18 +72,18 @@ def handle_solution_attempt(update, context):
     answer = update.message.text
     user = context.user_data.get('user')
     if check_answer(user, answer):
-        update.message.reply_text(static_text.correct_answer_message)
+        update.message.reply_text(bot_message_texts.correct_answer_message)
         update_user_data(user, increase_question_number=True, increase_current_score=True)
         return Conversation.QUESTION
     else:
-        update.message.reply_text(static_text.wrong_answer_message)
+        update.message.reply_text(bot_message_texts.wrong_answer_message)
 
 
 def send_quiz_answer(update, context):
     user = context.user_data.get('user')
     quiz_answer = redis_data.hget(user, 'current_answer')
 
-    message = static_text.quiz_answer_message.format(quiz_answer=quiz_answer)
+    message = bot_message_texts.quiz_answer_message.format(quiz_answer=quiz_answer)
     update.message.reply_text(message)
     update_user_data(user, increase_question_number=True)
     return Conversation.QUESTION
@@ -93,12 +93,12 @@ def send_score(update, context):
     user = context.user_data.get('user')
     score = redis_data.hget(user, 'current_score')
     answers_number = int(redis_data.hget(user, 'question_number')) - 1
-    message = static_text.total_score_message.format(score=score, answers_number=answers_number)
+    message = bot_message_texts.total_score_message.format(score=score, answers_number=answers_number)
     update.message.reply_text(message)
 
 
 def handle_unregistered_message(update, _):
-    update.message.reply_text(static_text.unregistered_message)
+    update.message.reply_text(bot_message_texts.unregistered_message)
 
 
 def main():
