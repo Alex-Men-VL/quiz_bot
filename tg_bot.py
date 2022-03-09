@@ -16,8 +16,8 @@ from bot_utils import (
 )
 from redis_db import (
     update_user_data,
-    save_quiz_questions_in_bd,
-    get_current_quiz, redis_connection
+    get_current_quiz,
+    redis_connection,
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -165,10 +165,6 @@ def main():
     updater.dispatcher.add_handler(MessageHandler(Filters.regex('^(Мой счет)$'), send_score))
     updater.dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command & ~Filters.regex('^(Новый вопрос)$'),
                                                   handle_unregistered_message))
-
-    if not redis_data.exists('questions'):
-        save_quiz_questions_in_bd(redis_data)
-        logger.info('Questions added to the database')
 
     try:
         updater.start_polling()

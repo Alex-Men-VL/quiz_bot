@@ -1,5 +1,3 @@
-import json
-
 import redis
 
 
@@ -12,19 +10,6 @@ def redis_connection(redis_uri, redis_port, redis_password):
     )
     if connection.ping():
         return connection
-
-
-def save_quiz_questions_in_bd(redis_data):
-    with open('quiz_questions.json', 'r') as json_file:
-        quiz_questions = json_file.read()
-    decode_quiz_questions = json.loads(quiz_questions)
-    for number, question in enumerate(decode_quiz_questions, start=1):
-        mapping = {
-            'question': question,
-            'answer': decode_quiz_questions[question]
-        }
-        redis_data.hset(f'question_{number}', mapping=mapping)
-    redis_data.set('questions', 'True')
 
 
 def update_user_data(user, redis_data, increase_question_number=False,

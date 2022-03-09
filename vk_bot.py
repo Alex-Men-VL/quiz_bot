@@ -173,10 +173,6 @@ def main():
         'ANSWER': handle_solution_attempt,
     }
 
-    if not redis_data.exists('questions'):
-        save_quiz_questions_in_bd(redis_data)
-        logger.info('Questions added to the database')
-
     try:
         vk_session = VkApi(token=vk_token)
         longpoll = VkLongPoll(vk_session)
