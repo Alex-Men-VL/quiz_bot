@@ -50,8 +50,7 @@ def get_formatted_questions(quiz_folder):
     return quiz_questions
 
 
-def create_json_file_with_questions(quiz_questions,
-                                    questions_file_name='quiz_questions.json'):
+def create_json_file_with_questions(quiz_questions, questions_file_name):
     if not quiz_questions:
         logger.error(
             'Questions have not been added. The folder may be empty.'
@@ -92,12 +91,16 @@ def main():
         )
         return
     quiz_questions = get_formatted_questions(quiz_folder)
-    json_file_is_created = create_json_file_with_questions(quiz_questions)
+
+    file_name = 'quiz_questions.json'
+    json_file_is_created = create_json_file_with_questions(quiz_questions,
+                                                           file_name)
 
     if json_file_is_created:
         redis_data = redis_connection(redis_uri, redis_port, redis_password)
         save_quiz_questions_in_bd(redis_data)
         logger.info('Questions added successfully.')
+        os.remove(file_name)
 
 
 if __name__ == '__main__':
