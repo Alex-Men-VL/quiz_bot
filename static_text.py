@@ -1,5 +1,3 @@
-from vk_api.keyboard import VkKeyboardColor
-
 tg_start_message = '''Привет, {first_name}! Я бот для викторин.
 Нажми «Новый вопрос» для начала викторины.
 /cancel - для отмены.
@@ -17,15 +15,3 @@ unregistered_message = '''Я вас не понимаю.
 '''
 total_score_message = 'Ваш текущий счет: {score} из {answers_number}'
 cancel_message = 'Вы завершили опрос. Чтобы продолжить, нажми «Новый вопрос».'
-
-tg_menu_buttons = [
-    'Новый вопрос',
-    'Сдаться',
-    'Мой счет'
-]
-
-vk_menu_buttons = {
-    'Новый вопрос': VkKeyboardColor.PRIMARY,
-    'Сдаться': VkKeyboardColor.NEGATIVE,
-    'Мой счет': VkKeyboardColor.SECONDARY,
-}

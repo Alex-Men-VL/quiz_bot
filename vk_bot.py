@@ -4,11 +4,11 @@ import random
 from environs import Env
 from telegram import Bot
 from vk_api import VkApi
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
 import static_text
 from bot_utils import (
-    build_vk_menu,
     check_answer
 )
 from redis_db import (
@@ -42,12 +42,28 @@ def handle_message(event, bot, states_functions):
     update_user_data(user, state=next_state)
 
 
+def build_start_menu(n_cols=2):
+    buttons = {
+        'Новый вопрос': VkKeyboardColor.PRIMARY,
+        'Сдаться': VkKeyboardColor.NEGATIVE,
+        'Мой счет': VkKeyboardColor.SECONDARY,
+    }
+
+    keyboard = VkKeyboard()
+
+    for number, button in enumerate(buttons, start=1):
+        keyboard.add_button(button, color=buttons[button])
+        if number % n_cols == 0:
+            keyboard.add_line()
+    return keyboard.get_keyboard()
+
+
 def send_start_message(event, bot, _):
     user_id = event.user_id
     bot.messages.send(
         user_id=user_id,
         message=static_text.vk_start_message,
-        keyboard=build_vk_menu(static_text.vk_menu_buttons, n_cols=2),
+        keyboard=build_start_menu(),
         random_id=random.randint(1, 1000)
     )
     return 'QUESTION'

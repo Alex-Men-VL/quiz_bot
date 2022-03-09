@@ -12,8 +12,7 @@ from telegram.ext import (
 
 import static_text
 from bot_utils import (
-    check_answer,
-    build_tg_menu
+    check_answer
 )
 from redis_db import (
     redis_data,
@@ -44,10 +43,12 @@ def handle_start_message(update, context):
     update_user_data(user)
 
     user_first_name = update.effective_user.first_name
-    buttons = build_tg_menu(static_text.tg_menu_buttons, n_cols=2)
+    buttons = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(buttons, resize_keyboard=True)
-    update.message.reply_text(static_text.tg_start_message.format(first_name=user_first_name),
-                              reply_markup=reply_markup)
+    update.message.reply_text(
+        static_text.tg_start_message.format(first_name=user_first_name),
+        reply_markup=reply_markup
+    )
 
     return Conversation.QUESTION
 
