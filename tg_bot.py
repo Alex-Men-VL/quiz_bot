@@ -29,9 +29,7 @@ class Conversation(Enum):
 
 
 def handle_start_message(update, context):
-    chat_id = update.message.chat_id
-    redis_data = context.bot_data.get('redis_data')
-    user = get_current_user(chat_id, redis_data, network='tg')
+    user = get_tg_user(update, context)
     context.user_data.update({'user': user})
 
     user_first_name = update.effective_user.first_name
@@ -44,13 +42,22 @@ def handle_start_message(update, context):
     return Conversation.QUESTION
 
 
+def get_tg_user(update, context):
+    chat_id = update.message.chat_id
+    redis_data = context.bot_data.get('redis_data')
+    user = get_current_user(chat_id, redis_data, network='tg')
+    return user
+
+
 def handle_cancel_message(update, _):
     update.message.reply_text(bot_message_texts.cancel_message)
     return ConversationHandler.END
 
 
 def handle_new_question_request(update, context):
-    user = context.user_data.get('user')
+    if not (user := context.user_data.get('user')):
+        user = get_tg_user(update, context)
+        context.user_data.update({'user': user})
     redis_data = context.bot_data.get('redis_data')
 
     quiz = get_quiz(redis_data)
@@ -88,7 +95,9 @@ def send_quiz_answer(update, context):
 
 
 def send_score(update, context):
-    user = context.user_data.get('user')
+    if not (user := context.user_data.get('user')):
+        user = get_tg_user(update, context)
+        context.user_data.update({'user': user})
     redis_data = context.bot_data.get('redis_data')
 
     score = redis_data.hget(user, 'current_score')
