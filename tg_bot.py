@@ -15,7 +15,7 @@ from bot_utils import (
     check_answer
 )
 from redis_db import (
-    get_current_quiz,
+    get_quiz,
     redis_connection,
     get_current_user,
 )
@@ -54,10 +54,10 @@ def handle_new_question_request(update, context):
     user = context.user_data.get('user')
     redis_data = context.bot_data.get('redis_data')
 
-    quiz_question, quiz_answer = get_current_quiz(user, redis_data)
-    redis_data.hset(user, 'current_answer', quiz_answer)
+    quiz = get_quiz(redis_data)
+    redis_data.hset(user, 'current_answer', quiz.get('answer'))
 
-    update.message.reply_text(quiz_question)
+    update.message.reply_text(quiz.get('question'))
     return Conversation.ANSWER
 
 

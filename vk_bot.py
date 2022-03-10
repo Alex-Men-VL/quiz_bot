@@ -12,9 +12,9 @@ from bot_utils import (
     check_answer
 )
 from redis_db import (
-    get_current_quiz,
     redis_connection,
-    get_current_user
+    get_current_user,
+    get_quiz
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -72,11 +72,11 @@ def handle_new_question_request(event, bot, user, redis_data):
         return 'QUESTION'
 
     user_id = event.user_id
-    quiz_question, quiz_answer = get_current_quiz(user, redis_data)
-    redis_data.hset(user, 'current_answer', quiz_answer)
+    quiz = get_quiz(redis_data)
+    redis_data.hset(user, 'current_answer', quiz.get('answer'))
     bot.messages.send(
         user_id=user_id,
-        message=quiz_question,
+        message=quiz.get('question'),
         random_id=random.randint(1, 1000)
     )
     return 'ANSWER'

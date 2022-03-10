@@ -25,8 +25,14 @@ def get_current_user(user_id, redis_data, network):
     return user
 
 
-def get_current_quiz(user, redis_data):
-    question_number = redis_data.hget(user, 'question_number')
-    quiz_question = redis_data.hget(f'question_{question_number}', 'question')
-    quiz_answer = redis_data.hget(f'question_{question_number}', 'answer')
-    return quiz_question, quiz_answer
+def get_quiz(redis_data):
+    quiz_question = redis_data.randomkey()
+    while not quiz_question.startswith('Question:'):
+        quiz_question = redis_data.randomkey()
+    quiz_answer = redis_data.get(quiz_question)
+    quiz_question = quiz_question.replace('Question:', '')
+    quiz = {
+        'question': quiz_question,
+        'answer': quiz_answer
+    }
+    return quiz
