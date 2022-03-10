@@ -80,7 +80,9 @@ def send_quiz_answer(update, context):
     redis_data.hincrby(user, 'answers_number', 1)
 
     quiz_answer = redis_data.hget(user, 'current_answer')
-    message = bot_message_texts.quiz_answer_message.format(quiz_answer=quiz_answer)
+    message = bot_message_texts.quiz_answer_message.format(
+        quiz_answer=quiz_answer
+    )
     update.message.reply_text(message)
     return Conversation.QUESTION
 
@@ -129,21 +131,28 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler('start', handle_start_message),
-            MessageHandler(Filters.regex('^(Новый вопрос)$') & ~Filters.command,
+            MessageHandler(Filters.regex('^(Новый вопрос)$')
+                           & ~Filters.command,
                            handle_new_question_request)
         ],
         states={
             Conversation.QUESTION: [
-                MessageHandler(Filters.regex('^(Новый вопрос)$') & ~Filters.command,
+                MessageHandler(Filters.regex('^(Новый вопрос)$')
+                               & ~Filters.command,
                                handle_new_question_request),
-                MessageHandler(Filters.text & ~Filters.command & ~Filters.regex('^(Мой счет)$'),
+                MessageHandler(Filters.text
+                               & ~Filters.command
+                               & ~Filters.regex('^(Мой счет)$'),
                                handle_unregistered_message)
             ],
             Conversation.ANSWER: [
-                MessageHandler(Filters.regex('^(Сдаться)$') & ~Filters.command,
+                MessageHandler(Filters.regex('^(Сдаться)$')
+                               & ~Filters.command,
                                send_quiz_answer),
-                MessageHandler(Filters.text & ~Filters.command & ~Filters.regex('^(Новый вопрос)$') &
-                               ~Filters.regex('^(Мой счет)$'),
+                MessageHandler(Filters.text
+                               & ~Filters.command
+                               & ~Filters.regex('^(Новый вопрос)$')
+                               & ~Filters.regex('^(Мой счет)$'),
                                handle_solution_attempt),
                 MessageHandler(Filters.regex('^(Новый вопрос)$'),
                                handle_unregistered_message)
@@ -155,9 +164,15 @@ def main():
         ]
     )
     updater.dispatcher.add_handler(conv_handler)
-    updater.dispatcher.add_handler(MessageHandler(Filters.regex('^(Мой счет)$'), send_score))
-    updater.dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command & ~Filters.regex('^(Новый вопрос)$'),
-                                                  handle_unregistered_message))
+    updater.dispatcher.add_handler(
+        MessageHandler(Filters.regex('^(Мой счет)$'), send_score)
+    )
+    updater.dispatcher.add_handler(
+        MessageHandler(Filters.text
+                       & ~Filters.command
+                       & ~Filters.regex('^(Новый вопрос)$'),
+                       handle_unregistered_message)
+    )
 
     try:
         updater.start_polling()

@@ -111,7 +111,9 @@ def send_quiz_answer(event, bot, user, redis_data):
     redis_data.hincrby(user, 'answers_number', 1)
 
     quiz_answer = redis_data.hget(user, 'current_answer')
-    message = bot_message_texts.quiz_answer_message.format(quiz_answer=quiz_answer)
+    message = bot_message_texts.quiz_answer_message.format(
+        quiz_answer=quiz_answer
+    )
     bot.messages.send(
         user_id=user_id,
         message=message,
@@ -123,7 +125,9 @@ def send_score(event, bot, user, redis_data):
     user_id = event.user_id
     score = redis_data.hget(user, 'current_score')
     answers_number = redis_data.hget(user, 'answers_number')
-    message = bot_message_texts.total_score_message.format(score=score, answers_number=answers_number)
+    message = bot_message_texts.total_score_message.format(
+        score=score, answers_number=answers_number
+    )
     bot.messages.send(
         user_id=user_id,
         message=message,
