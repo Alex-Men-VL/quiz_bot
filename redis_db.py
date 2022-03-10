@@ -15,15 +15,19 @@ def redis_connection(redis_uri, redis_port, redis_password):
 def get_current_user(user_id, redis_data, network):
     user = f'{network}_{user_id}'
     if not redis_data.exists(user):
-        mapping = {
-            'answers_number': '0',
-            'current_answer': '',
-            'current_score': '0'
-        }
-        if network == 'vk':
-            mapping.update({'state': ''})
-        redis_data.hset(user, mapping=mapping)
+        handle_new_user(user, redis_data, network)
     return user
+
+
+def handle_new_user(user, redis_data, network):
+    mapping = {
+        'answers_number': '0',
+        'current_answer': '',
+        'current_score': '0'
+    }
+    if network == 'vk':
+        mapping.update({'state': ''})
+    redis_data.hset(user, mapping=mapping)
 
 
 def get_quiz(redis_data):
