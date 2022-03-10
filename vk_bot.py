@@ -22,13 +22,12 @@ logger = logging.getLogger(__file__)
 def handle_message(event, bot, states_functions, redis_data):
     user_id = event.user_id
     user = get_current_user(user_id, redis_data, network='vk')
-    if not redis_data.hget(user, 'state'):
+    if not (state := redis_data.hget(user, 'state')):
         state = 'START'
         redis_data.hset(user, 'state', state)
-    elif event.text == 'Мой счет':
+
+    if event.text == 'Мой счет':
         state = 'SCORE'
-    else:
-        state = redis_data.hget(user, 'state')
 
     state_handler = states_functions[state]
     next_state = state_handler(event, bot, user, redis_data)
@@ -101,13 +100,13 @@ def handle_solution_attempt(event, bot, user, redis_data):
         redis_data.hincrby(user, 'current_score', 1)
         redis_data.hincrby(user, 'answers_number', 1)
         return 'QUESTION'
-    else:
-        bot.messages.send(
-            user_id=user_id,
-            message=bot_message_texts.wrong_answer_message,
-            random_id=random.randint(1, 1000)
-        )
-        return 'ANSWER'
+
+    bot.messages.send(
+        user_id=user_id,
+        message=bot_message_texts.wrong_answer_message,
+        random_id=random.randint(1, 1000)
+    )
+    return 'ANSWER'
 
 
 def send_quiz_answer(event, bot, user, redis_data):
@@ -137,7 +136,9 @@ def send_score(event, bot, user, redis_data):
         message=message,
         random_id=random.randint(1, 1000)
     )
-    return redis_data.hget(user, 'state')
+
+    current_state = redis_data.hget(user, 'state')
+    return current_state
 
 
 def handle_unregistered_message(event, bot):
