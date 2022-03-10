@@ -8,13 +8,11 @@ from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
 import bot_message_texts
-from bot_utils import (
-    check_answer
-)
 from redis_db import (
     redis_connection,
     get_current_user,
-    get_quiz
+    get_quiz,
+    check_user_answer_with_correct
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -92,7 +90,7 @@ def handle_solution_attempt(event, bot, user, redis_data):
         handle_unregistered_message(event, bot)
         return 'ANSWER'
 
-    if check_answer(user, answer, redis_data):
+    if check_user_answer_with_correct(redis_data, user, answer):
         bot.messages.send(
             user_id=user_id,
             message=bot_message_texts.correct_answer_message,

@@ -7,17 +7,16 @@ from telegram.ext import (
     Updater,
     CommandHandler,
     MessageHandler,
-    Filters, ConversationHandler
+    Filters,
+    ConversationHandler
 )
 
 import bot_message_texts
-from bot_utils import (
-    check_answer
-)
 from redis_db import (
     get_quiz,
     redis_connection,
     get_current_user,
+    check_user_answer_with_correct
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -66,7 +65,7 @@ def handle_solution_attempt(update, context):
     user = context.user_data.get('user')
     redis_data = context.bot_data.get('redis_data')
 
-    if check_answer(user, answer, redis_data):
+    if check_user_answer_with_correct(redis_data, user, answer):
         update.message.reply_text(bot_message_texts.correct_answer_message)
         redis_data.hincrby(user, 'current_score', 1)
         redis_data.hincrby(user, 'answers_number', 1)

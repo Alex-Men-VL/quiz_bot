@@ -37,3 +37,9 @@ def get_quiz(redis_data):
         'answer': quiz_answer
     }
     return quiz
+
+
+def check_user_answer_with_correct(redis_data, user, user_answer):
+    correct_answer = redis_data.hget(user, 'current_answer')
+    formatted_correct_answer = correct_answer.split('.')[0].split('(')[0]
+    return user_answer in formatted_correct_answer.strip()
