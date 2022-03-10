@@ -25,12 +25,10 @@ def handle_message(event, bot, states_functions, redis_data):
     if not redis_data.hget(user, 'state'):
         state = 'START'
         redis_data.hset(user, 'state', state)
+    elif event.text == 'Мой счет':
+        state = 'SCORE'
     else:
         state = redis_data.hget(user, 'state')
-
-    if event.text == 'Мой счет':
-        send_score(event, bot, user, redis_data)
-        return
 
     state_handler = states_functions[state]
     next_state = state_handler(event, bot, user, redis_data)
@@ -131,6 +129,7 @@ def send_score(event, bot, user, redis_data):
         message=message,
         random_id=random.randint(1, 1000)
     )
+    return redis_data.hget(user, 'state')
 
 
 def handle_unregistered_message(event, bot):
@@ -167,6 +166,7 @@ def main():
         'START': send_start_message,
         'QUESTION': handle_new_question_request,
         'ANSWER': handle_solution_attempt,
+        'SCORE': send_score,
     }
 
     try:
