@@ -65,7 +65,7 @@ def create_json_file_with_questions(quiz_questions, questions_file_name):
     return True
 
 
-def save_quiz_questions_in_bd(redis_data):
+def save_quiz_questions_in_db(redis_data):
     with open('quiz_questions.json', 'r') as json_file:
         quiz_questions = json_file.read()
     decode_quiz_questions = json.loads(quiz_questions)
@@ -98,7 +98,7 @@ def main():
 
     if json_file_is_created:
         redis_data = redis_connection(redis_uri, redis_port, redis_password)
-        save_quiz_questions_in_bd(redis_data)
+        save_quiz_questions_in_db(redis_data)
         logger.info('Questions added successfully.')
         os.remove(file_name)
 
