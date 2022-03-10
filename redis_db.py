@@ -12,29 +12,17 @@ def redis_connection(redis_uri, redis_port, redis_password):
         return connection
 
 
-def update_user_data(user, redis_data, increase_question_number=False,
-                     current_answer=None, increase_current_score=False,
-                     state=None):
+def get_current_user(user_id, redis_data, network):
+    user = f'{network}_{user_id}'
     if not redis_data.exists(user):
         mapping = {
-            'question_number': '1',
             'current_answer': '',
             'current_score': '0'
         }
-        if state:
-            mapping.update({'state': state})  # If the user uses a VK bot
-
+        if network == 'vk':
+            mapping.update({'state': ''})
         redis_data.hset(user, mapping=mapping)
-        return
-
-    if increase_question_number:
-        redis_data.hincrby(user, 'question_number', 1)
-    if increase_current_score:
-        redis_data.hincrby(user, 'current_score', 1)
-    if current_answer:
-        redis_data.hset(user, 'current_answer', current_answer)
-    if state:
-        redis_data.hset(user, 'state', state)
+    return user
 
 
 def get_current_quiz(user, redis_data):

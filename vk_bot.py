@@ -12,23 +12,21 @@ from bot_utils import (
     check_answer
 )
 from redis_db import (
-    update_user_data,
-    save_quiz_questions_in_bd,
-    get_current_quiz, redis_connection
+    get_current_quiz,
+    redis_connection,
+    get_current_user
 )
 from tg_logs_handler import TelegramLogsHandler
 
 logger = logging.getLogger(__file__)
 
-NETWORK = 'vk'
-
 
 def handle_message(event, bot, states_functions, redis_data):
     user_id = event.user_id
-    user = f'{NETWORK}_{user_id}'
-    if not redis_data.exists(user, 'state'):
+    user = get_current_user(user_id, redis_data, network='vk')
+    if not redis_data.hget(user, 'state'):
         state = 'START'
-        update_user_data(user, redis_data, state=state)
+        redis_data.hset(user, 'state', state)
     else:
         state = redis_data.hget(user, 'state')
 
@@ -38,7 +36,7 @@ def handle_message(event, bot, states_functions, redis_data):
 
     state_handler = states_functions[state]
     next_state = state_handler(event, bot, user, redis_data)
-    update_user_data(user, redis_data, state=next_state)
+    redis_data.hset(user, 'state', next_state)
 
 
 def build_start_menu(n_cols=2):
@@ -75,7 +73,7 @@ def handle_new_question_request(event, bot, user, redis_data):
 
     user_id = event.user_id
     quiz_question, quiz_answer = get_current_quiz(user, redis_data)
-    update_user_data(user, redis_data, current_answer=quiz_answer)
+    redis_data.hset(user, 'current_answer', quiz_answer)
     bot.messages.send(
         user_id=user_id,
         message=quiz_question,
@@ -100,8 +98,7 @@ def handle_solution_attempt(event, bot, user, redis_data):
             message=bot_message_texts.correct_answer_message,
             random_id=random.randint(1, 1000)
         )
-        update_user_data(user, redis_data, increase_question_number=True,
-                         increase_current_score=True)
+        redis_data.hincrby(user, 'current_score', 1)
         return 'QUESTION'
     else:
         bot.messages.send(
@@ -122,7 +119,6 @@ def send_quiz_answer(event, bot, user, redis_data):
         message=message,
         random_id=random.randint(1, 1000)
     )
-    update_user_data(user, redis_data, increase_question_number=True)
 
 
 def send_score(event, bot, user, redis_data):

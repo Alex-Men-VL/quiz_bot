@@ -15,15 +15,13 @@ from bot_utils import (
     check_answer
 )
 from redis_db import (
-    update_user_data,
     get_current_quiz,
     redis_connection,
+    get_current_user,
 )
 from tg_logs_handler import TelegramLogsHandler
 
 logger = logging.getLogger(__file__)
-
-NETWORK = 'tg'
 
 
 class Conversation(Enum):
@@ -33,14 +31,9 @@ class Conversation(Enum):
 
 def handle_start_message(update, context):
     chat_id = update.message.chat_id
-    user = f'{NETWORK}_{chat_id}'
-    context.user_data.update(
-        {
-            'user': user
-        }
-    )
     redis_data = context.bot_data.get('redis_data')
-    update_user_data(user, redis_data)
+    user = get_current_user(chat_id, redis_data, network='tg')
+    context.user_data.update({'user': user})
 
     user_first_name = update.effective_user.first_name
     buttons = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
@@ -49,7 +42,6 @@ def handle_start_message(update, context):
         bot_message_texts.tg_start_message.format(first_name=user_first_name),
         reply_markup=reply_markup
     )
-
     return Conversation.QUESTION
 
 
@@ -63,7 +55,7 @@ def handle_new_question_request(update, context):
     redis_data = context.bot_data.get('redis_data')
 
     quiz_question, quiz_answer = get_current_quiz(user, redis_data)
-    update_user_data(user, redis_data, current_answer=quiz_answer)
+    redis_data.hset(user, 'current_answer', quiz_answer)
 
     update.message.reply_text(quiz_question)
     return Conversation.ANSWER
@@ -76,8 +68,7 @@ def handle_solution_attempt(update, context):
 
     if check_answer(user, answer, redis_data):
         update.message.reply_text(bot_message_texts.correct_answer_message)
-        update_user_data(user, redis_data, increase_question_number=True,
-                         increase_current_score=True)
+        redis_data.hincrby(user, 'current_score', 1)
         return Conversation.QUESTION
     else:
         update.message.reply_text(bot_message_texts.wrong_answer_message)
@@ -91,7 +82,6 @@ def send_quiz_answer(update, context):
 
     message = bot_message_texts.quiz_answer_message.format(quiz_answer=quiz_answer)
     update.message.reply_text(message)
-    update_user_data(user, redis_data, increase_question_number=True)
     return Conversation.QUESTION
 
 
