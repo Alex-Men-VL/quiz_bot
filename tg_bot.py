@@ -117,13 +117,19 @@ def main():
     dev_bot = Bot(token=tg_dev_token)
     logs_handler = TelegramLogsHandler(dev_bot, tg_dev_chat_id)
     logger.addHandler(logs_handler)
-    logger.info('Telegram bot is running')
 
     redis_uri = env.str('REDIS_URL')
     redis_port = env.str('REDIS_PORT')
     redis_password = env.str('REDIS_PASSWORD')
 
     redis_data = redis_connection(redis_uri, redis_port, redis_password)
+
+    if not redis_data.keys('Question:*'):
+        logger.error('There are no questions to the quizzes in the database. '
+                     'Telegram bot is not running.')
+        return
+    else:
+        logger.info('Telegram bot is running.')
 
     updater = Updater(token=tg_token, use_context=True)
     updater.dispatcher.bot_data.update({'redis_data': redis_data})
