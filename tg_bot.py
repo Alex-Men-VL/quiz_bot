@@ -69,6 +69,7 @@ def handle_solution_attempt(update, context):
     if check_answer(user, answer, redis_data):
         update.message.reply_text(bot_message_texts.correct_answer_message)
         redis_data.hincrby(user, 'current_score', 1)
+        redis_data.hincrby(user, 'answers_number', 1)
         return Conversation.QUESTION
     else:
         update.message.reply_text(bot_message_texts.wrong_answer_message)
@@ -77,9 +78,9 @@ def handle_solution_attempt(update, context):
 def send_quiz_answer(update, context):
     user = context.user_data.get('user')
     redis_data = context.bot_data.get('redis_data')
+    redis_data.hincrby(user, 'answers_number', 1)
 
     quiz_answer = redis_data.hget(user, 'current_answer')
-
     message = bot_message_texts.quiz_answer_message.format(quiz_answer=quiz_answer)
     update.message.reply_text(message)
     return Conversation.QUESTION
@@ -90,8 +91,11 @@ def send_score(update, context):
     redis_data = context.bot_data.get('redis_data')
 
     score = redis_data.hget(user, 'current_score')
-    answers_number = int(redis_data.hget(user, 'question_number')) - 1
-    message = bot_message_texts.total_score_message.format(score=score, answers_number=answers_number)
+    answers_number = redis_data.hget(user, 'answers_number')
+    message = bot_message_texts.total_score_message.format(
+        score=score,
+        answers_number=answers_number
+    )
     update.message.reply_text(message)
 
 

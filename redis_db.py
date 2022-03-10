@@ -16,6 +16,7 @@ def get_current_user(user_id, redis_data, network):
     user = f'{network}_{user_id}'
     if not redis_data.exists(user):
         mapping = {
+            'answers_number': '0',
             'current_answer': '',
             'current_score': '0'
         }
