@@ -49,7 +49,7 @@ def get_tg_user(update, context):
     return user
 
 
-def handle_cancel_message(update, _):
+def handle_cancel_message(update, context):
     update.message.reply_text(bot_message_texts.cancel_message)
     return ConversationHandler.END
 
@@ -81,6 +81,12 @@ def handle_solution_attempt(update, context):
         update.message.reply_text(bot_message_texts.wrong_answer_message)
 
 
+def handle_question_request_during_answer(update, context):
+    message = bot_message_texts.question_request_during_answer_message
+    update.message.reply_text(message)
+    return Conversation.ANSWER
+
+
 def send_quiz_answer(update, context):
     user = context.user_data.get('user')
     redis_data = context.bot_data.get('redis_data')
@@ -109,7 +115,7 @@ def send_score(update, context):
     update.message.reply_text(message)
 
 
-def handle_unregistered_message(update, _):
+def handle_unregistered_message(update, context):
     update.message.reply_text(bot_message_texts.unregistered_message)
 
 
@@ -170,7 +176,7 @@ def main():
                                & ~Filters.regex('^(Мой счет)$'),
                                handle_solution_attempt),
                 MessageHandler(Filters.regex('^(Новый вопрос)$'),
-                               handle_unregistered_message)
+                               handle_question_request_during_answer)
 
             ],
         },

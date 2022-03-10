@@ -85,7 +85,11 @@ def handle_solution_attempt(event, bot, user, redis_data):
         send_quiz_answer(event, bot, user, redis_data)
         return 'QUESTION'
     elif answer == 'Новый вопрос':
-        handle_unregistered_message(event, bot)
+        bot.messages.send(
+            user_id=user_id,
+            message=bot_message_texts.question_request_during_answer_message,
+            random_id=random.randint(1, 1000)
+        )
         return 'ANSWER'
 
     if check_user_answer_with_correct(redis_data, user, answer):
