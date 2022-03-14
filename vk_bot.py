@@ -174,7 +174,7 @@ def main():
 
     redis_data = redis_connection(redis_uri, redis_port, redis_password)
 
-    if not redis_data.keys('Question:*'):
+    if not redis_data.exists('questions'):
         logger.error('There are no questions to the quizzes in the database. '
                      'VK bot is not running.')
         return
