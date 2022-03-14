@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 
@@ -50,29 +49,6 @@ def get_formatted_questions(quiz_folder):
     return quiz_questions
 
 
-def create_json_file_with_questions(quiz_questions, questions_file_name):
-    if not quiz_questions:
-        logger.error(
-            'Questions have not been added. The folder may be empty.'
-        )
-        return False
-    with open(questions_file_name, 'w') as json_file:
-        json_file.write(json.dumps(
-            quiz_questions,
-            ensure_ascii=False,
-            indent=4,
-        ))
-    return True
-
-
-def save_quiz_questions_in_db(redis_data):
-    with open('quiz_questions.json', 'r') as json_file:
-        quiz_questions = json_file.read()
-    decode_quiz_questions = json.loads(quiz_questions)
-    for question, answer in decode_quiz_questions.items():
-        redis_data.set(f'Question:{question}', answer)
-
-
 def main():
     env = Env()
     env.read_env()
@@ -92,15 +68,16 @@ def main():
         return
     quiz_questions = get_formatted_questions(quiz_folder)
 
-    file_name = 'quiz_questions.json'
-    json_file_is_created = create_json_file_with_questions(quiz_questions,
-                                                           file_name)
+    if not quiz_questions:
+        logger.error(
+            'Questions have not been added. The folder may be empty.'
+        )
+        return
 
-    if json_file_is_created:
-        redis_data = redis_connection(redis_uri, redis_port, redis_password)
-        save_quiz_questions_in_db(redis_data)
-        logger.info('Questions added successfully.')
-        os.remove(file_name)
+    redis_data = redis_connection(redis_uri, redis_port, redis_password)
+    for question, answer in quiz_questions.items():
+        redis_data.hset('questions', key=question, value=answer)
+    logger.info('Questions added successfully.')
 
 
 if __name__ == '__main__':

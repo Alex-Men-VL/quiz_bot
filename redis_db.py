@@ -23,11 +23,8 @@ def handle_new_user(user, redis_data):
 
 
 def get_quiz(redis_data):
-    quiz_question = redis_data.randomkey()
-    while not quiz_question.startswith('Question:'):
-        quiz_question = redis_data.randomkey()
-    quiz_answer = redis_data.get(quiz_question)
-    quiz_question = quiz_question.replace('Question:', '')
+    quiz_question = redis_data.hrandfield('questions')
+    quiz_answer = redis_data.hget('questions', quiz_question)
     quiz = {
         'question': quiz_question,
         'answer': quiz_answer

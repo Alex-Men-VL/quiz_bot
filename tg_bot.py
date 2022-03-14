@@ -142,7 +142,7 @@ def main():
 
     redis_data = redis_connection(redis_uri, redis_port, redis_password)
 
-    if not redis_data.keys('Question:*'):
+    if not redis_data.exists('questions'):
         logger.error('There are no questions to the quizzes in the database. '
                      'Telegram bot is not running.')
         return
@@ -154,7 +154,7 @@ def main():
 
     conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler('start', handle_start_message),
+            CommandHandler('start', get_user(handle_start_message)),
             MessageHandler(Filters.regex('^(Новый вопрос)$')
                            & ~Filters.command,
                            get_user(handle_new_question_request))
