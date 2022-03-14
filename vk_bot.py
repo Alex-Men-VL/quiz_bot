@@ -178,8 +178,7 @@ def main():
         logger.error('There are no questions to the quizzes in the database. '
                      'VK bot is not running.')
         return
-    else:
-        logger.info('VK bot is running.')
+    logger.info('VK bot is running.')
 
     states_functions = {
         'START': send_start_message,

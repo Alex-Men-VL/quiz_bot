@@ -146,8 +146,7 @@ def main():
         logger.error('There are no questions to the quizzes in the database. '
                      'Telegram bot is not running.')
         return
-    else:
-        logger.info('Telegram bot is running.')
+    logger.info('Telegram bot is running.')
 
     updater = Updater(token=tg_token, use_context=True)
     updater.dispatcher.bot_data.update({'redis_data': redis_data})
