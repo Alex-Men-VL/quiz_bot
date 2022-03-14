@@ -10,9 +10,9 @@ from vk_api.longpoll import VkEventType, VkLongPoll
 import bot_message_texts
 from redis_db import (
     redis_connection,
-    get_current_user,
     get_quiz,
-    check_answer
+    check_answer,
+    handle_new_user
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -21,7 +21,10 @@ logger = logging.getLogger(__file__)
 
 def handle_message(event, bot, states_functions, redis_data):
     user_id = event.user_id
-    user = get_current_user(user_id, redis_data, network='vk')
+    user = f'vk_{user_id}'
+    if not redis_data.exists(user):
+        handle_new_user(user, redis_data)
+
     if not (state := redis_data.hget(user, 'state')):
         state = 'START'
         redis_data.hset(user, 'state', state)

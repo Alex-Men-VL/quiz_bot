@@ -12,21 +12,13 @@ def redis_connection(redis_uri, redis_port, redis_password):
         return connection
 
 
-def get_current_user(user_id, redis_data, network):
-    user = f'{network}_{user_id}'
-    if not redis_data.exists(user):
-        handle_new_user(user, redis_data, network)
-    return user
-
-
-def handle_new_user(user, redis_data, network):
+def handle_new_user(user, redis_data):
     mapping = {
         'answers_number': '0',
         'current_answer': '',
-        'current_score': '0'
+        'current_score': '0',
+        'state': ''
     }
-    if network == 'vk':
-        mapping.update({'state': ''})
     redis_data.hset(user, mapping=mapping)
 
 

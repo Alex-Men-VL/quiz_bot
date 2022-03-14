@@ -15,8 +15,8 @@ import bot_message_texts
 from redis_db import (
     get_quiz,
     redis_connection,
-    get_current_user,
-    check_answer
+    check_answer,
+    handle_new_user
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -29,8 +29,13 @@ class Conversation(Enum):
 
 
 def handle_start_message(update, context):
-    user = get_tg_user(update, context)
+    chat_id = update.message.chat_id
+    user = f'tg_{chat_id}'
     context.user_data.update({'user': user})
+
+    redis_data = context.bot_data.get('redis_data')
+    if not redis_data.exists(user):
+        handle_new_user(user, redis_data)
 
     user_first_name = update.effective_user.first_name
     buttons = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
@@ -42,13 +47,6 @@ def handle_start_message(update, context):
     return Conversation.QUESTION
 
 
-def get_tg_user(update, context):
-    chat_id = update.message.chat_id
-    redis_data = context.bot_data.get('redis_data')
-    user = get_current_user(chat_id, redis_data, network='tg')
-    return user
-
-
 def handle_cancel_message(update, context):
     update.message.reply_text(bot_message_texts.cancel_message)
     return ConversationHandler.END
@@ -56,7 +54,8 @@ def handle_cancel_message(update, context):
 
 def handle_new_question_request(update, context):
     if not (user := context.user_data.get('user')):
-        user = get_tg_user(update, context)
+        chat_id = update.message.chat_id
+        user = f'tg_{chat_id}'
         context.user_data.update({'user': user})
     redis_data = context.bot_data.get('redis_data')
 
@@ -103,7 +102,8 @@ def send_quiz_answer(update, context):
 
 def send_score(update, context):
     if not (user := context.user_data.get('user')):
-        user = get_tg_user(update, context)
+        chat_id = update.message.chat_id
+        user = f'tg_{chat_id}'
         context.user_data.update({'user': user})
     redis_data = context.bot_data.get('redis_data')
 
