@@ -28,10 +28,18 @@ class Conversation(Enum):
     ANSWER = 2
 
 
+def get_user(func):
+    def wrapper(update, context):
+        network = 'tg'
+        chat_id = update.message.chat_id
+        user = f'{network}_{chat_id}'
+        context.user_data['user'] = user
+        return func(update, context)
+    return wrapper
+
+
 def handle_start_message(update, context):
-    chat_id = update.message.chat_id
-    user = f'tg_{chat_id}'
-    context.user_data.update({'user': user})
+    user = context.user_data.get('user')
 
     redis_data = context.bot_data.get('redis_data')
     if not redis_data.exists(user):
@@ -53,10 +61,7 @@ def handle_cancel_message(update, context):
 
 
 def handle_new_question_request(update, context):
-    if not (user := context.user_data.get('user')):
-        chat_id = update.message.chat_id
-        user = f'tg_{chat_id}'
-        context.user_data.update({'user': user})
+    user = context.user_data.get('user')
     redis_data = context.bot_data.get('redis_data')
 
     quiz = get_quiz(redis_data)
@@ -101,10 +106,7 @@ def send_quiz_answer(update, context):
 
 
 def send_score(update, context):
-    if not (user := context.user_data.get('user')):
-        chat_id = update.message.chat_id
-        user = f'tg_{chat_id}'
-        context.user_data.update({'user': user})
+    user = context.user_data.get('user')
     redis_data = context.bot_data.get('redis_data')
 
     score = redis_data.hget(user, 'current_score')
@@ -155,13 +157,13 @@ def main():
             CommandHandler('start', handle_start_message),
             MessageHandler(Filters.regex('^(Новый вопрос)$')
                            & ~Filters.command,
-                           handle_new_question_request)
+                           get_user(handle_new_question_request))
         ],
         states={
             Conversation.QUESTION: [
                 MessageHandler(Filters.regex('^(Новый вопрос)$')
                                & ~Filters.command,
-                               handle_new_question_request),
+                               get_user(handle_new_question_request)),
                 MessageHandler(Filters.text
                                & ~Filters.command
                                & ~Filters.regex('^(Мой счет)$'),
@@ -170,12 +172,12 @@ def main():
             Conversation.ANSWER: [
                 MessageHandler(Filters.regex('^(Сдаться)$')
                                & ~Filters.command,
-                               send_quiz_answer),
+                               get_user(send_quiz_answer)),
                 MessageHandler(Filters.text
                                & ~Filters.command
                                & ~Filters.regex('^(Новый вопрос)$')
                                & ~Filters.regex('^(Мой счет)$'),
-                               handle_solution_attempt),
+                               get_user(handle_solution_attempt)),
                 MessageHandler(Filters.regex('^(Новый вопрос)$'),
                                handle_question_request_during_answer)
 
@@ -187,7 +189,7 @@ def main():
     )
     updater.dispatcher.add_handler(conv_handler)
     updater.dispatcher.add_handler(
-        MessageHandler(Filters.regex('^(Мой счет)$'), send_score)
+        MessageHandler(Filters.regex('^(Мой счет)$'), get_user(send_score))
     )
     updater.dispatcher.add_handler(
         MessageHandler(Filters.text
