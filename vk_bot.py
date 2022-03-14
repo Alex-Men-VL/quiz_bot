@@ -12,7 +12,7 @@ from redis_db import (
     redis_connection,
     get_current_user,
     get_quiz,
-    check_user_answer_with_correct
+    check_answer
 )
 from tg_logs_handler import TelegramLogsHandler
 
@@ -79,11 +79,11 @@ def handle_new_question_request(event, bot, user, redis_data):
 
 def handle_solution_attempt(event, bot, user, redis_data):
     user_id = event.user_id
-    answer = event.text
-    if answer == 'Сдаться':
+    user_answer = event.text
+    if user_answer == 'Сдаться':
         send_quiz_answer(event, bot, user, redis_data)
         return 'QUESTION'
-    elif answer == 'Новый вопрос':
+    elif user_answer == 'Новый вопрос':
         bot.messages.send(
             user_id=user_id,
             message=bot_message_texts.question_request_during_answer_message,
@@ -91,7 +91,8 @@ def handle_solution_attempt(event, bot, user, redis_data):
         )
         return 'ANSWER'
 
-    if check_user_answer_with_correct(redis_data, user, answer):
+    correct_answer = redis_data.hget(user, 'current_answer')
+    if check_answer(user_answer, correct_answer):
         bot.messages.send(
             user_id=user_id,
             message=bot_message_texts.correct_answer_message,
