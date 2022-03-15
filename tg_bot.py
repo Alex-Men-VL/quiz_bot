@@ -8,7 +8,8 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     Filters,
-    ConversationHandler
+    ConversationHandler,
+    PicklePersistence
 )
 
 import bot_message_texts
@@ -28,18 +29,10 @@ class Conversation(Enum):
     ANSWER = 2
 
 
-def get_user(func):
-    def wrapper(update, context):
-        network = 'tg'
-        chat_id = update.message.chat_id
-        user = f'{network}_{chat_id}'
-        context.user_data['user'] = user
-        return func(update, context)
-    return wrapper
-
-
 def handle_start_message(update, context):
-    user = context.user_data.get('user')
+    chat_id = update.message.chat_id
+    user = f'tg_{chat_id}'
+    context.user_data.update({'user': user})
 
     redis_data = context.bot_data.get('redis_data')
     if not redis_data.exists(user):
@@ -148,21 +141,25 @@ def main():
         return
     logger.info('Telegram bot is running.')
 
-    updater = Updater(token=tg_token, use_context=True)
+    persistence = PicklePersistence(filename='tg_bot.pickle',
+                                    store_bot_data=False)
+
+    updater = Updater(token=tg_token, use_context=True,
+                      persistence=persistence)
     updater.dispatcher.bot_data.update({'redis_data': redis_data})
 
     conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler('start', get_user(handle_start_message)),
+            CommandHandler('start', handle_start_message),
             MessageHandler(Filters.regex('^(Новый вопрос)$')
                            & ~Filters.command,
-                           get_user(handle_new_question_request))
+                           handle_new_question_request)
         ],
         states={
             Conversation.QUESTION: [
                 MessageHandler(Filters.regex('^(Новый вопрос)$')
                                & ~Filters.command,
-                               get_user(handle_new_question_request)),
+                               handle_new_question_request),
                 MessageHandler(Filters.text
                                & ~Filters.command
                                & ~Filters.regex('^(Мой счет)$'),
@@ -171,12 +168,12 @@ def main():
             Conversation.ANSWER: [
                 MessageHandler(Filters.regex('^(Сдаться)$')
                                & ~Filters.command,
-                               get_user(send_quiz_answer)),
+                               send_quiz_answer),
                 MessageHandler(Filters.text
                                & ~Filters.command
                                & ~Filters.regex('^(Новый вопрос)$')
                                & ~Filters.regex('^(Мой счет)$'),
-                               get_user(handle_solution_attempt)),
+                               handle_solution_attempt),
                 MessageHandler(Filters.regex('^(Новый вопрос)$'),
                                handle_question_request_during_answer)
 
@@ -184,11 +181,13 @@ def main():
         },
         fallbacks=[
             CommandHandler('cancel', handle_cancel_message)
-        ]
+        ],
+        name='quiz_conversation',
+        persistent=True,
     )
     updater.dispatcher.add_handler(conv_handler)
     updater.dispatcher.add_handler(
-        MessageHandler(Filters.regex('^(Мой счет)$'), get_user(send_score))
+        MessageHandler(Filters.regex('^(Мой счет)$'), send_score)
     )
     updater.dispatcher.add_handler(
         MessageHandler(Filters.text

@@ -1,3 +1,4 @@
 quiz-questions
-quiz_questions.json
 .env
+env
+tg_bot.pickle
